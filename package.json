@@ -1,0 +1,36 @@
+{
+  "name": "markdownlint-rule-lazy-continuation-lines",
+  "version": "0.1.0",
+  "description": "A markdownlint rule that rejects lazy continuation lines",
+  "license": "MIT",
+  "author": "William Warriner",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wwarriner/markdownlint-rule-lazy-continuation-lines.git"
+  },
+  "homepage": "https://github.com/wwarriner/markdownlint-rule-lazy-continuation-lines",
+  "bugs": "https://github.com/wwarriner/markdownlint-rule-lazy-continuation-lines/issues",
+  "exports": "./lazy-continuation-lines.cjs",
+  "scripts": {
+    "eslint": "eslint --max-warnings 0",
+    "mdlint": "markdownlint-cli2 ./test/lazy-continuation-lines-violations.md",
+    "test": "node --test --experimental-test-coverage"
+  },
+  "files": [
+    "package.json",
+    "LICENSE",
+    "README.md",
+    "lazy-continuation-lines.cjs"
+  ],
+  "keywords": [
+    "markdownlint-rule",
+    "markdownlint",
+    "markdown",
+    "lint"
+  ],
+  "devDependencies": {
+    "@eslint/js": "9.21.0",
+    "eslint": "9.21.0",
+    "markdownlint-cli2": "0.17.2"
+  }
+}

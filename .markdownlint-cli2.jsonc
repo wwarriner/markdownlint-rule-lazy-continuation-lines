@@ -1,0 +1,11 @@
+{
+  "config": {
+    "lazy-continuation-lines": true,
+    "MD003": false,
+    "MD022": false,
+    "MD032": false
+  },
+  "customRules": [
+    "./lazy-continuation-lines.cjs"
+  ]
+}
