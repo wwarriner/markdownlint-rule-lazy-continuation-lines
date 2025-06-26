@@ -40,6 +40,52 @@ lazy
    lazy
   ok
 
+## Strong
+
+- List item **ok**
+
+- List
+**lazy**
+
+## Emphasis
+
+- List item _ok_
+
+- List
+_lazy_
+
+## Descriptive Link
+
+- List item [ok](ok)
+
+- List
+[lazy](lazy)
+
+## Bare Link
+
+- List item <ok.md>
+
+- List
+<lazy.md>
+
+## Checkbox
+
+- [] List item ok
+
+## Image
+
+- List item ![!ok](ok)
+
+- List
+![!lazy](lazy)
+
+## Code
+
+- List item `ok`
+
+- List
+`lazy`
+
 ## Lists with No Content - All OK
 
 1.

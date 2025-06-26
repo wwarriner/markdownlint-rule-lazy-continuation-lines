@@ -24,6 +24,12 @@ const violations = [
   "lazy-continuation-lines-violations.md:31:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: 'lazy']",
   "lazy-continuation-lines-violations.md:39:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: 'lazy']",
   "lazy-continuation-lines-violations.md:40:4 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: 'lazy']",
+  "lazy-continuation-lines-violations.md:48:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '**lazy**']",
+  "lazy-continuation-lines-violations.md:55:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '_lazy_']",
+  "lazy-continuation-lines-violations.md:62:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '[lazy](lazy)']",
+  "lazy-continuation-lines-violations.md:69:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '<lazy.md>']",
+  "lazy-continuation-lines-violations.md:80:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '![!lazy](lazy)']",
+  "lazy-continuation-lines-violations.md:87:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '`lazy`']",
 ];
 const customRules = [lazyContinuationLines];
 const paramsBase = {
@@ -71,6 +77,7 @@ const contents = [
   `> 1. list item\nlazy\n        lazy\n`,
   `> 1. > list item\nlazy\n        lazy\n`,
   `- list item\n\n  new paragraph\nlazy\n    lazy\n`,
+  `- list item\n**lazy**\n`,
 ];
 const expecteds = [
   `- list item\n  lazy\n  lazy\n`,
@@ -79,6 +86,7 @@ const expecteds = [
   `> 1. list item\n     lazy\n     lazy\n`,
   `> 1. > list item\n       lazy\n       lazy\n`,
   `- list item\n\n  new paragraph\n  lazy\n  lazy\n`,
+  `- list item\n  **lazy**\n`,
 ];
 assert(contents.length === expecteds.length);
 for (let index = 0; index < contents.length; index += 1) {

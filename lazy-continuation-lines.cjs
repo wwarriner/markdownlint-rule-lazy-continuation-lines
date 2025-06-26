@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 /* eslint-disable capitalized-comments */
 /* eslint-disable max-statements */
 /* eslint-disable no-inline-comments */
@@ -105,20 +106,47 @@ const traverseTokenTree = (
 // };
 
 /**
+ * @param {MicromarkToken[]} tokens
+ * @param {{
+ *  pre?: string,
+ *  post?: string,
+ * }} params
+ */
+// const logTokens = (tokens, { pre = "BLOCK", post }) => {
+//   let realizedPost = post === undefined ? `${pre}` : `${post}`;
+//   realizedPost += ` END\n`;
+
+//   // eslint-disable-next-line no-console, no-undef
+//   console.log(pre);
+
+//   tokens.map((token, _index, _array) => logToken(token));
+
+//   // eslint-disable-next-line no-console, no-undef
+//   console.log(realizedPost);
+// };
+
+/**
  * General purpose helper function to recursively traverse a parser token tree
  * using a DFS approach to get a list of tokens matching the input types. Stops recursion on encountering a list.
  *
  * Parameters:
  * - token: MicromarkToken
  * - types: MicroMarkToken types to record for output.
+ *
+ * @param {MicromarkToken} token
+ * @param {{
+ *  includedTypes?: string[],
+ *  ignoredTypes?: string[],
+ *  stopRecursionFn?: (token: MicromarkToken, sharedArgs: {extractedTokens: MicromarkToken[]}) => boolean
+ * }} params
  */
 const extractChildrenWithTypes = (
-  /**@type {MicromarkToken} */ token,
-  /** @type {string[]} */ types,
-  /** @type {(token: MicromarkToken, sharedArgs: {extractedTokens: MicromarkToken[]}) => boolean} */ stopRecursionFn = (
-    _token,
-    _sharedArgs
-  ) => false
+  token,
+  {
+    includedTypes,
+    ignoredTypes,
+    stopRecursionFn = (_token, _sharedArgs) => false,
+  }
 ) => {
   /**
    * @type {{extractedTokens: MicromarkToken[]}}
@@ -126,7 +154,13 @@ const extractChildrenWithTypes = (
   const sharedArgs = { extractedTokens: [] };
   traverseTokenTree(token, {
     mapFn: (token_, sharedArgs_) => {
-      if (types.includes(token_.type)) {
+      const included =
+        includedTypes === undefined
+          ? true
+          : includedTypes.includes(token_.type);
+      const ignored =
+        ignoredTypes === undefined ? false : ignoredTypes.includes(token_.type);
+      if (included && !ignored) {
         sharedArgs_.extractedTokens.push(token_);
       }
     },
@@ -185,26 +219,6 @@ const prepareErrInfo = (
   fixInfo,
 });
 
-/**
- * @param {MicromarkToken[]} tokens
- * @param {{
- *  pre?: string,
- *  post?: string,
- * }} params
- */
-// const logTokens = (tokens, { pre = "BLOCK", post }) => {
-//   let realizedPost = post === undefined ? `${pre}` : `${post}`;
-//   realizedPost += ` END\n`;
-
-//   // eslint-disable-next-line no-console, no-undef
-//   console.log(pre);
-
-//   tokens.map((token, _index, _array) => logToken(token));
-
-//   // eslint-disable-next-line no-console, no-undef
-//   console.log(realizedPost);
-// };
-
 /** @type import("markdownlint").Rule */
 module.exports = {
   names: ["lazy-continuation-lines"],
@@ -229,39 +243,43 @@ module.exports = {
       //A logTokens(tokens, { pre: "ALL TOKENS" });
 
       const listTokens = tokens
-        .map((token, _index, _array) =>
-          extractChildrenWithTypes(
-            token,
-            ["listOrdered", "listUnordered"],
-            (token_, _sharedArgs) => isList(token_)
-          )
+        .map((token) =>
+          extractChildrenWithTypes(token, {
+            includedTypes: ["listOrdered", "listUnordered"],
+            stopRecursionFn: (token_, _sharedArgs) => isList(token_),
+          })
         )
         .flat();
       //A logTokens(listTokens, { pre: "LIST TOKENS" });
 
-      const listChildTokens = listTokens
-        .map((token, _index, _array) => token.children)
-        .flat();
+      const listChildTokens = listTokens.map((token) => token.children).flat();
 
       const contentTokens = listChildTokens
-        .map((token, _index, _array) =>
-          extractChildrenWithTypes(token, ["content"])
+        .map((token) =>
+          extractChildrenWithTypes(token, { includedTypes: ["content"] })
         )
         .flat();
       //A logTokens(contentTokens, { pre: "CONTENT TOKENS" });
 
       for (const contentToken of contentTokens) {
-        const dataTokens = extractChildrenWithTypes(contentToken, ["data"]);
-        for (const dataToken of dataTokens) {
-          if (dataToken.startColumn !== contentToken.startColumn) {
-            const fixInfo = prepareFixInfo(
-              dataToken.startLine,
-              dataToken.startColumn,
-              contentToken.startColumn
-            );
-            const errInfo = prepareErrInfo(dataToken, fixInfo);
-            onError(errInfo);
+        const [paragraph] = contentToken.children;
+        const childTokens = paragraph.children.filter(
+          (token) => !["linePrefix", "listItemIndent"].includes(token.type)
+        );
+        let newlineEncountered = true;
+        for (const token of childTokens) {
+          if (newlineEncountered) {
+            if (token.startColumn !== contentToken.startColumn) {
+              const fixInfo = prepareFixInfo(
+                token.startLine,
+                token.startColumn,
+                contentToken.startColumn
+              );
+              const errInfo = prepareErrInfo(token, fixInfo);
+              onError(errInfo);
+            }
           }
+          newlineEncountered = ["lineEnding"].includes(token.type);
         }
       }
     },
