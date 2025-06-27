@@ -86,7 +86,34 @@ _lazy_
 - List
 `lazy`
 
-## Lists with No Content - All OK
+## Indented Code Block
+
+1. List item
+
+        indented code block
+         ok
+       ok: this will need a separate rule
+
+## Optional Admonition
+
+1. List item
+   ok
+   !!! ok
+       ok if admonitions true
+   ok: admonition ended just before this line
+lazy
+       lazy
+
+   !!! ok
+       ok if admonitions true
+lazy
+
+## Comment
+
+1. List item
+<!--ok-->
+
+## Lists with No Content
 
 1.
     1.
@@ -103,10 +130,3 @@ MD032
 MD003,MD022
   -
 MD022
-
-## Indented Code Block - All OK
-
-1. List item
-
-       code
-MD032

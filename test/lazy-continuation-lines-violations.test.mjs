@@ -30,6 +30,9 @@ const violations = [
   "lazy-continuation-lines-violations.md:69:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '<lazy.md>']",
   "lazy-continuation-lines-violations.md:80:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '![!lazy](lazy)']",
   "lazy-continuation-lines-violations.md:87:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: '`lazy`']",
+  "lazy-continuation-lines-violations.md:104:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: 'lazy']",
+  "lazy-continuation-lines-violations.md:105:8 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: 'lazy']",
+  "lazy-continuation-lines-violations.md:109:1 lazy-continuation-lines Lazy continuation lines are not allowed [Lazy continuation line: 'lazy']",
 ];
 const customRules = [lazyContinuationLines];
 const paramsBase = {

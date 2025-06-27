@@ -11,6 +11,7 @@
 /**
  * @typedef {import("markdownlint").MicromarkToken} MicromarkToken
  * @typedef {import("markdownlint").RuleParams} RuleParams
+ * @typedef {import("markdownlint").RuleOnError} RuleOnError
  * @typedef {import("markdownlint").FixInfo} FixInfo
  */
 
@@ -219,6 +220,127 @@ const prepareErrInfo = (
   fixInfo,
 });
 
+const States = Object.freeze({
+  processing: "processing",
+  waiting: "waiting",
+});
+/**
+ *
+ */
+class ContentTokenProcessor {
+  constructor(
+    /** @type {RuleOnError} */ onError,
+    /** @type {boolean} */ admonitionsEnabled
+  ) {
+    // Reusable.
+    this.onError = onError;
+    this.admonitionsEnabled = admonitionsEnabled;
+
+    // Need resetting.
+    this.withinAdmonition = false;
+    this.admonitionContentColumn = 0;
+    /** @type {keyof States} */ this.state = States.processing;
+  }
+
+  process(/** @type {MicromarkToken} */ contentToken) {
+    const [paragraph] = contentToken.children;
+    const childTokens = paragraph.children.filter(
+      (token) => !["linePrefix", "listItemIndent"].includes(token.type)
+    );
+    this.reset();
+    for (const childToken of childTokens) {
+      this.processChildToken(contentToken, childToken);
+    }
+  }
+
+  processChildToken(
+    /** @type {MicromarkToken} */ contentToken,
+    /** @type {MicromarkToken} */ childToken
+  ) {
+    const expectedStartColumn = contentToken.startColumn;
+    if (
+      this.state === States.processing &&
+      this.isLazy(expectedStartColumn, childToken)
+    ) {
+      this.reportLazyToken(expectedStartColumn, childToken);
+    }
+    this.updateState(childToken);
+    this.updateAdmonition(childToken);
+  }
+
+  updateState(/** @type {MicromarkToken} */ childToken) {
+    if (ContentTokenProcessor.isLineEnding(childToken)) {
+      this.state = States.processing;
+    } else {
+      this.state = States.waiting;
+    }
+  }
+
+  updateAdmonition(/** @type {MicromarkToken} */ childToken) {
+    if (this.admonitionsEnabled) {
+      if (ContentTokenProcessor.isAdmonitionStart(childToken)) {
+        this.enterAdmonition(childToken.startColumn);
+      } else if (!this.continuesAdmonition(childToken)) {
+        this.exitAdmonition();
+      }
+    }
+  }
+
+  enterAdmonition(/** @type {number} */ column) {
+    this.admonitionContentColumn = column + 4;
+    this.withinAdmonition = true;
+  }
+
+  continuesAdmonition(/** @type {MicromarkToken} */ childToken) {
+    return (
+      this.admonitionsEnabled &&
+      this.withinAdmonition &&
+      childToken.startColumn >= this.admonitionContentColumn
+    );
+  }
+
+  exitAdmonition() {
+    this.admonitionContentColumn = 0;
+    this.withinAdmonition = false;
+  }
+
+  isLazy(
+    /** @type {number} */ expectedStartColumn,
+    /** @type {MicromarkToken} */ token
+  ) {
+    return (
+      !this.continuesAdmonition(token) &&
+      token.startColumn !== expectedStartColumn
+    );
+  }
+
+  reportLazyToken(
+    /** @type {number} */ expectedStartColumn,
+    /** @type {MicromarkToken} */ childToken
+  ) {
+    const fixInfo = prepareFixInfo(
+      childToken.startLine,
+      childToken.startColumn,
+      expectedStartColumn
+    );
+    const errInfo = prepareErrInfo(childToken, fixInfo);
+    this.onError(errInfo);
+  }
+
+  reset() {
+    this.exitAdmonition();
+    this.state = States.processing;
+  }
+
+  static isAdmonitionStart(/** @type {MicromarkToken} */ token) {
+    return token.text.startsWith("!!!");
+  }
+
+  static isLineEnding(/** @type {MicromarkToken} */ token) {
+    return token.type === "lineEnding";
+  }
+}
+
 /** @type import("markdownlint").Rule */
 module.exports = {
   names: ["lazy-continuation-lines"],
@@ -226,61 +348,46 @@ module.exports = {
   tags: ["wwarriner"],
   parser: "micromark",
 
-  function:
+  function: (
+    /** @type {RuleParams} */ params,
+    /** @type {RuleOnError} */ onError
+  ) => {
     /**
-     * @param {RuleParams} params
+     * 1. Get tokens.
+     * 2. Filter to listTokens.
+     * 3. Extract tokens of type "content".
+     * 4. For each token of type "content", extract tokens of type "data".
+     * 5. For each token of type "data", process (content,data) pair.
      */
-    (params, onError) => {
-      /**
-       * 1. Get tokens.
-       * 2. Filter to listTokens.
-       * 3. Extract tokens of type "content".
-       * 4. For each token of type "content", extract tokens of type "data".
-       * 5. For each token of type "data", process (content,data) pair.
-       */
 
-      const { tokens } = params.parsers.micromark;
-      //A logTokens(tokens, { pre: "ALL TOKENS" });
+    const { admonitions } = params.config;
+    const { tokens } = params.parsers.micromark;
+    //A logTokens(tokens, "ALL TOKENS");
 
-      const listTokens = tokens
-        .map((token) =>
-          extractChildrenWithTypes(token, {
-            includedTypes: ["listOrdered", "listUnordered"],
-            stopRecursionFn: (token_, _sharedArgs) => isList(token_),
-          })
-        )
-        .flat();
-      //A logTokens(listTokens, { pre: "LIST TOKENS" });
+    const listTokens = tokens
+      .map((token) =>
+        extractChildrenWithTypes(token, {
+          includedTypes: ["listOrdered", "listUnordered"],
+          stopRecursionFn: (token_, _sharedArgs) => isList(token_),
+        })
+      )
+      .flat();
+    //A logTokens(listTokens, "LIST TOKENS");
 
-      const listChildTokens = listTokens.map((token) => token.children).flat();
+    const listChildTokens = listTokens.map((token) => token.children).flat();
+    const listContentTokens = listChildTokens
+      .map((token) =>
+        extractChildrenWithTypes(token, { includedTypes: ["content"] })
+      )
+      .flat();
+    //A logTokens(listContentTokens, "CONTENT TOKENS");
 
-      const contentTokens = listChildTokens
-        .map((token) =>
-          extractChildrenWithTypes(token, { includedTypes: ["content"] })
-        )
-        .flat();
-      //A logTokens(contentTokens, { pre: "CONTENT TOKENS" });
-
-      for (const contentToken of contentTokens) {
-        const [paragraph] = contentToken.children;
-        const childTokens = paragraph.children.filter(
-          (token) => !["linePrefix", "listItemIndent"].includes(token.type)
-        );
-        let newlineEncountered = true;
-        for (const token of childTokens) {
-          if (newlineEncountered) {
-            if (token.startColumn !== contentToken.startColumn) {
-              const fixInfo = prepareFixInfo(
-                token.startLine,
-                token.startColumn,
-                contentToken.startColumn
-              );
-              const errInfo = prepareErrInfo(token, fixInfo);
-              onError(errInfo);
-            }
-          }
-          newlineEncountered = ["lineEnding"].includes(token.type);
-        }
-      }
-    },
+    const contentTokenProcessor = new ContentTokenProcessor(
+      onError,
+      admonitions
+    );
+    for (const contentToken of listContentTokens) {
+      contentTokenProcessor.process(contentToken);
+    }
+  },
 };
