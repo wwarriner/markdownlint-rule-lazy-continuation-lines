@@ -30,6 +30,16 @@ lazy
 >    1. > List item
 lazy
 
+1. > > > List item
+lazy
+   1. > > > List item
+lazy
+
+> 1. > > > List item
+lazy
+>    1. > > > List item
+lazy
+
 ## Second Paragraph
 
 - List item
@@ -68,10 +78,6 @@ _lazy_
 - List
 <lazy.md>
 
-## Checkbox
-
-- [] List item ok
-
 ## Image
 
 - List item ![!ok](ok)
@@ -85,14 +91,6 @@ _lazy_
 
 - List
 `lazy`
-
-## Indented Code Block
-
-1. List item
-
-        indented code block
-         ok
-       ok: this will need a separate rule
 
 ## Optional Admonition
 
@@ -108,12 +106,24 @@ lazy
        ok if admonitions true
 lazy
 
-## Comment
+## OK Indented Code Block
+
+1. List item
+
+        indented code block
+         ok
+       ok: this will need a separate rule
+
+## OK Checkbox
+
+- [] List item ok
+
+## OK Comment
 
 1. List item
 <!--ok-->
 
-## Lists with No Content
+## OK Lists with No Content
 
 1.
     1.
