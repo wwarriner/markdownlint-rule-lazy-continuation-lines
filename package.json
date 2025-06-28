@@ -1,6 +1,6 @@
 {
   "name": "markdownlint-rule-lazy-continuation-lines",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A markdownlint rule that rejects lazy continuation lines",
   "license": "MIT",
   "author": "William Warriner",
